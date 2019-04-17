@@ -145,7 +145,6 @@ Parameters Parameters::RegTest() noexcept {
   p.coinbase_maturity = 1;
   p.stake_maturity = 2;
   p.stake_maturity_activation_height = 1000;
-  p.reward = 3750000000;
 
   p.message_start_characters[0] = 0xfa;
   p.message_start_characters[1] = 0xbf;
