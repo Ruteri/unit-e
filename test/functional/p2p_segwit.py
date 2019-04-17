@@ -168,7 +168,7 @@ class SegWitTest(UnitETestFramework):
         # Create a transaction that spends the coinbase
         tx = CTransaction()
         tx.vin.append(CTxIn(COutPoint(txid, 0), b""))
-        tx.vout.append(CTxOut((PROPOSER_REWARD - 1) * UNIT, CScript([OP_TRUE, OP_DROP] * 15 + [OP_TRUE])))
+        tx.vout.append(CTxOut((PROPOSER_REWARD - Decimal('0.1')) * UNIT, CScript([OP_TRUE, OP_DROP] * 15 + [OP_TRUE])))
         tx.calc_sha256()
 
         # Check that serializing it with or without witness is the same
@@ -179,7 +179,7 @@ class SegWitTest(UnitETestFramework):
         self.test_node.sync_with_ping() # make sure the tx was processed
         assert tx.hash in self.nodes[0].getrawmempool()
         # Save this transaction for later
-        self.utxo.append(UTXO(tx.sha256, 0, (PROPOSER_REWARD - 1) * UNIT))
+        self.utxo.append(UTXO(tx.sha256, 0, (PROPOSER_REWARD - Decimal('0.1')) * UNIT))
         self.nodes[0].generate(1)
 
 
