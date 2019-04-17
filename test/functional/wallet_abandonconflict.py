@@ -10,7 +10,7 @@
  which are not included in a block and are not currently in the mempool. It has
  no effect on transactions which are already conflicted or abandoned.
 """
-from test_framework.test_framework import UnitETestFramework
+from test_framework.test_framework import UnitETestFramework, PROPOSER_REWARD
 from test_framework.util import *
 
 class AbandonConflictTest(UnitETestFramework):
@@ -22,50 +22,53 @@ class AbandonConflictTest(UnitETestFramework):
         self.nodes[1].generate(100)
         sync_blocks(self.nodes)
         balance = self.nodes[0].getbalance()
-        txA = self.nodes[0].sendtoaddress(self.nodes[0].getnewaddress(), Decimal("10"))
-        txB = self.nodes[0].sendtoaddress(self.nodes[0].getnewaddress(), Decimal("10"))
-        txC = self.nodes[0].sendtoaddress(self.nodes[0].getnewaddress(), Decimal("10"))
+        ABC_amount = PROPOSER_REWARD - Decimal('0.1')
+        txA = self.nodes[0].sendtoaddress(self.nodes[0].getnewaddress(), ABC_amount)
+        txB = self.nodes[0].sendtoaddress(self.nodes[0].getnewaddress(), ABC_amount)
+        txC = self.nodes[0].sendtoaddress(self.nodes[0].getnewaddress(), ABC_amount)
         sync_mempools(self.nodes)
         self.nodes[1].generate(1)
 
         sync_blocks(self.nodes)
         newbalance = self.nodes[0].getbalance()
-        assert balance - newbalance < Decimal("0.001") #no more than fees lost
+        assert_less_than(balance - newbalance, Decimal("0.001")) #no more than fees lost
         balance = newbalance
 
         # Disconnect nodes so node0's transactions don't get into node1's mempool
         disconnect_nodes(self.nodes[0], 1)
 
-        # Identify the 10btc outputs
-        nA = next(i for i, vout in enumerate(self.nodes[0].getrawtransaction(txA, 1)["vout"]) if vout["value"] == Decimal("10"))
-        nB = next(i for i, vout in enumerate(self.nodes[0].getrawtransaction(txB, 1)["vout"]) if vout["value"] == Decimal("10"))
-        nC = next(i for i, vout in enumerate(self.nodes[0].getrawtransaction(txC, 1)["vout"]) if vout["value"] == Decimal("10"))
+        # Identify the A, B and C outputs
+        nA = next(i for i, vout in enumerate(self.nodes[0].getrawtransaction(txA, 1)["vout"]) if vout["value"] == ABC_amount)
+        nB = next(i for i, vout in enumerate(self.nodes[0].getrawtransaction(txB, 1)["vout"]) if vout["value"] == ABC_amount)
+        nC = next(i for i, vout in enumerate(self.nodes[0].getrawtransaction(txC, 1)["vout"]) if vout["value"] == ABC_amount)
 
         inputs =[]
-        # spend 10btc outputs from txA and txB
+        # spend outputs from txA and txB
         inputs.append({"txid":txA, "vout":nA})
         inputs.append({"txid":txB, "vout":nB})
         outputs = {}
 
-        outputs[self.nodes[0].getnewaddress()] = Decimal("14.99998")
-        outputs[self.nodes[1].getnewaddress()] = Decimal("5")
+        AB1_amount = (ABC_amount * 3 / 2) - Decimal('0.00001')
+        outputs[self.nodes[0].getnewaddress()] = AB1_amount
+        outputs[self.nodes[1].getnewaddress()] = ABC_amount / 2
         signed = self.nodes[0].signrawtransaction(self.nodes[0].createrawtransaction(inputs, outputs))
         txAB1 = self.nodes[0].sendrawtransaction(signed["hex"])
 
-        # Identify the 14.99998btc output
-        nAB = next(i for i, vout in enumerate(self.nodes[0].getrawtransaction(txAB1, 1)["vout"]) if vout["value"] == Decimal("14.99998"))
+        # Identify the AB1 input
+        nAB = next(i for i, vout in enumerate(self.nodes[0].getrawtransaction(txAB1, 1)["vout"]) if vout["value"] == AB1_amount)
 
         #Create a child tx spending AB1 and C
         inputs = []
         inputs.append({"txid":txAB1, "vout":nAB})
         inputs.append({"txid":txC, "vout":nC})
         outputs = {}
-        outputs[self.nodes[0].getnewaddress()] = Decimal("24.9996")
+        ABC2_amount = (ABC_amount * 5 / 2) - Decimal('0.00002')
+        outputs[self.nodes[0].getnewaddress()] = ABC2_amount
         signed2 = self.nodes[0].signrawtransaction(self.nodes[0].createrawtransaction(inputs, outputs))
         txABC2 = self.nodes[0].sendrawtransaction(signed2["hex"])
 
         # Create a child tx spending ABC2
-        signed3_change = Decimal("24.999")
+        signed3_change = (ABC_amount * 5 / 2) - Decimal('0.0001')
         inputs = [ {"txid":txABC2, "vout":0} ]
         outputs = { self.nodes[0].getnewaddress(): signed3_change }
         signed3 = self.nodes[0].signrawtransaction(self.nodes[0].createrawtransaction(inputs, outputs))
@@ -74,7 +77,7 @@ class AbandonConflictTest(UnitETestFramework):
 
         # In mempool txs from self should increase balance from change
         newbalance = self.nodes[0].getbalance()
-        assert_equal(newbalance, balance - Decimal("30") + signed3_change)
+        assert_equal(newbalance, balance - 3 * ABC_amount + signed3_change)
         balance = newbalance
 
         # Restart the node with a higher min relay fee so the parent tx is no longer in mempool
@@ -102,7 +105,7 @@ class AbandonConflictTest(UnitETestFramework):
         # including that the child tx was also abandoned
         self.nodes[0].abandontransaction(txAB1)
         newbalance = self.nodes[0].getbalance()
-        assert_equal(newbalance, balance + Decimal("30"))
+        assert_equal(newbalance, balance + 3 * ABC_amount)
         balance = newbalance
 
         # Verify that even with a low min relay fee, the tx is not reaccepted from wallet on startup once abandoned
@@ -116,13 +119,13 @@ class AbandonConflictTest(UnitETestFramework):
         # But its child tx remains abandoned
         self.nodes[0].sendrawtransaction(signed["hex"])
         newbalance = self.nodes[0].getbalance()
-        assert_equal(newbalance, balance - Decimal("20") + Decimal("14.99998"))
+        assert_equal(newbalance, balance - 2 * ABC_amount + AB1_amount)
         balance = newbalance
 
         # Send child tx again so its unabandoned
         self.nodes[0].sendrawtransaction(signed2["hex"])
         newbalance = self.nodes[0].getbalance()
-        assert_equal(newbalance, balance - Decimal("10") - Decimal("14.99998") + Decimal("24.9996"))
+        assert_equal(newbalance, balance - ABC_amount - AB1_amount + ABC2_amount)
         balance = newbalance
 
         # Remove using high relay fee again
@@ -130,7 +133,7 @@ class AbandonConflictTest(UnitETestFramework):
         self.start_node(0, extra_args=["-minrelaytxfee=0.0001"])
         assert_equal(len(self.nodes[0].getrawmempool()), 0)
         newbalance = self.nodes[0].getbalance()
-        assert_equal(newbalance, balance - Decimal("24.9996"))
+        assert_equal(newbalance, balance - ABC2_amount)
         balance = newbalance
 
         # Create a double spend of AB1 by spending again from only A's 10 output
@@ -138,7 +141,7 @@ class AbandonConflictTest(UnitETestFramework):
         inputs =[]
         inputs.append({"txid":txA, "vout":nA})
         outputs = {}
-        outputs[self.nodes[1].getnewaddress()] = Decimal("9.9999")
+        outputs[self.nodes[1].getnewaddress()] = ABC_amount - Decimal("0.00001")
         tx = self.nodes[0].createrawtransaction(inputs, outputs)
         signed = self.nodes[0].signrawtransaction(tx)
         self.nodes[1].sendrawtransaction(signed["hex"])
@@ -149,7 +152,7 @@ class AbandonConflictTest(UnitETestFramework):
 
         # Verify that B and C's 10 UTE outputs are available for spending again because AB1 is now conflicted
         newbalance = self.nodes[0].getbalance()
-        assert_equal(newbalance, balance + Decimal("20"))
+        assert_equal(newbalance, balance + 2 * ABC_amount)
         balance = newbalance
 
         # There is currently a minor bug around this and so this test doesn't work.  See Issue #7315
