@@ -76,7 +76,7 @@ class SegWitTest(UnitETestFramework):
         self.nodes[0].generate(170)  # Mine blocks to generate enough mature balance
 
         self.log.info("Verify sending to p2sh-embedded and native segwit addresses")
-        txid = self.nodes[0].sendtoaddress(self.nodes[0].getnewaddress(), 1)
+        txid = self.nodes[0].sendtoaddress(self.nodes[0].getnewaddress(), PROPOSER_REWARD - Decimal('0.1'))
 
         balance_presetup = self.nodes[0].getbalance()
         self.pubkey = []
@@ -127,7 +127,7 @@ class SegWitTest(UnitETestFramework):
         self.success_mine(self.nodes[0], p2sh_ids[NODE_0][WIT_V1][0], True)
 
         self.log.info("Verify node includes non-segwit transactions")
-        txid = self.nodes[0].sendtoaddress(self.nodes[0].getnewaddress(), 1)
+        txid = self.nodes[0].sendtoaddress(self.nodes[0].getnewaddress(), PROPOSER_REWARD - Decimal('0.4'))
         blockhash = self.nodes[0].generate(1)
 
         block = self.nodes[0].getblock(blockhash[0])
@@ -504,7 +504,7 @@ class SegWitTest(UnitETestFramework):
         tx = CTransaction()
         tx.vin.append(CTxIn(COutPoint(int('0x'+utxo['txid'],0), utxo['vout'])))
         for i in script_list:
-            tx.vout.append(CTxOut(1000000, i))
+            tx.vout.append(CTxOut(100000, i))
         tx.rehash()
         signresults = self.nodes[0].signrawtransaction(bytes_to_hex_str(tx.serialize_without_witness()))['hex']
         txid = self.nodes[0].sendrawtransaction(signresults, True)
