@@ -163,6 +163,7 @@ class EstimateFeeTest(UnitETestFramework):
 
     def transact_and_mine(self, numblocks, mining_node):
         min_fee = Decimal("0.00001")
+        fee_increment = Decimal("0.000001")
         # We will now mine numblocks blocks generating on average 100 transactions between each block
         # We shuffle our confirmed txout set before each set of transactions
         # small_txpuzzle_randfee will use the transactions that have inputs already in the chain when possible
@@ -172,7 +173,7 @@ class EstimateFeeTest(UnitETestFramework):
             for j in range(random.randrange(100-50,100+50)):
                 from_index = random.randint(1,2)
                 (txhex, fee) = small_txpuzzle_randfee(self.nodes[from_index], self.confutxo,
-                                                      self.memutxo, Decimal("0.005"), min_fee, min_fee)
+                                                      self.memutxo, Decimal("0.0005"), min_fee, fee_increment)
                 tx_kbytes = (len(txhex) // 2) / 1000.0
                 self.fees_per_kb.append(float(fee)/tx_kbytes)
             sync_mempools(self.nodes[0:3], wait=.1)
