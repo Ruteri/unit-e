@@ -7,7 +7,7 @@
 Test that the DERSIG soft-fork activates at (regtest) height 1251.
 """
 
-from test_framework.test_framework import UnitETestFramework
+from test_framework.test_framework import UnitETestFramework, PROPOSER_REWARD
 from test_framework.util import *
 from test_framework.mininode import *
 from test_framework.blocktools import create_coinbase, sign_coinbase, create_block, get_tip_snapshot_meta
@@ -67,7 +67,7 @@ class BIP66Test(UnitETestFramework):
         self.log.info("Test that transactions with non-DER signatures cannot appear in a block")
 
         spendtx = create_transaction(self.nodes[0], self.coinbase_blocks[0],
-                self.nodeaddress, 1.0)
+                self.nodeaddress, PROPOSER_REWARD - Decimal('0.1'))
         unDERify(spendtx)
         spendtx.rehash()
 
@@ -110,7 +110,7 @@ class BIP66Test(UnitETestFramework):
 
         self.log.info("Test that a version 3 block with a DERSIG-compliant transaction is accepted")
         block.vtx[1] = create_transaction(self.nodes[0],
-                self.coinbase_blocks[0], self.nodeaddress, 1.0)
+                self.coinbase_blocks[0], self.nodeaddress, PROPOSER_REWARD - Decimal('0.1'))
         block.compute_merkle_trees()
         block.solve()
 
