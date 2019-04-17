@@ -766,7 +766,7 @@ BOOST_FIXTURE_TEST_CASE(ListCoins, ListCoinsTestingSetup)
     // returns the coins associated with the change address underneath the
     // coinbaseKey pubkey, even though the change address has a different
     // pubkey.
-    AddTx(CRecipient{GetScriptForDestination(WitnessV0KeyHash()), 1 * UNIT, false /* subtract fee */});
+    AddTx(CRecipient{GetScriptForDestination(WitnessV0KeyHash()), 10000000, false /* subtract fee */});
     list = pwalletMain->ListCoins();
     BOOST_CHECK_EQUAL(list.size(), 1);
     BOOST_CHECK_EQUAL(list.begin()->first.which(), 4);
@@ -840,14 +840,14 @@ BOOST_FIXTURE_TEST_CASE(AvailableCoins, ListCoinsTestingSetup)
         CScript::CreateRemoteStakingKeyhashScript(
             ToByteVector(their_key.GetPubKey().GetID()),
             ToByteVector(our_key.GetPubKey().GetSha256())),
-        1 * UNIT, false
+        10000000, false
     });
 
     AddTx(CRecipient{
         CScript::CreateRemoteStakingScripthashScript(
             ToByteVector(their_key.GetPubKey().GetID()),
             ToByteVector(Sha256(witness_script.begin(), witness_script.end()))),
-        1 * UNIT, false
+        10000000, false
     });
 
     pwalletMain->AvailableCoins(coins);
