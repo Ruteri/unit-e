@@ -30,6 +30,7 @@ Start three nodes:
       isn't buried by at least two weeks' work.
 """
 import time
+from decimal import Decimal
 
 from test_framework.blocktools import (
     calc_snapshot_hash,
@@ -41,6 +42,7 @@ from test_framework.blocktools import (
 )
 from test_framework.key import CECKey
 from test_framework.keytools import KeyTool
+from test_framework.messages import UNIT
 from test_framework.mininode import (CBlockHeader,
                                      COutPoint,
                                      CTransaction,
@@ -186,7 +188,7 @@ class AssumeValidTest(UnitETestFramework):
         self.log.info("Create a transaction spending the coinbase output with an invalid (null) signature")
         tx = CTransaction()
         tx.vin.append(CTxIn(COutPoint(self.block1.vtx[0].sha256, 0), scriptSig=b""))
-        tx.vout.append(CTxOut((PROPOSER_REWARD - 1) * 100000000, CScript([OP_TRUE])))
+        tx.vout.append(CTxOut((PROPOSER_REWARD - Decimal('0.1')) * UNIT, CScript([OP_TRUE])))
         tx.calc_sha256()
 
         coin = self.get_coin_to_stake()
