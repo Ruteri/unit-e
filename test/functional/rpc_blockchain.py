@@ -21,7 +21,12 @@ from decimal import Decimal
 import http.client
 import subprocess
 
-from test_framework.test_framework import (UnitETestFramework, DISABLE_FINALIZATION)
+from test_framework.test_framework import (
+    UnitETestFramework,
+    DISABLE_FINALIZATION,
+    PROPOSER_REWARD,
+)
+
 from test_framework.util import (
     assert_equal,
     assert_greater_than,
@@ -142,7 +147,7 @@ class BlockchainTest(UnitETestFramework):
         node = self.nodes[0]
         res = node.gettxoutsetinfo()
 
-        assert_equal(res['total_amount'], Decimal('1060750.00000000'))
+        assert_equal(res['total_amount'], Decimal('1060000.00000000') + 200 * PROPOSER_REWARD)
 
         assert_equal(res['transactions'], 201)
         assert_equal(res['height'], 200)
