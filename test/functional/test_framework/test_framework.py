@@ -53,7 +53,7 @@ TEST_EXIT_SKIPPED = 77
 
 COINBASE_MATURITY = 100  # Should match the value from consensus.h
 STAKE_SPLIT_THRESHOLD = 1000  # Should match the value from blockchain_parameters.cpp
-PROPOSER_REWARD = Decimal('3.75')  # Will not decrease as tests don't generate enough blocks
+PROPOSER_REWARD = Decimal('0.6181')  # Static reward
 
 BLOCK_HEADER_LENGTH = 140
 
