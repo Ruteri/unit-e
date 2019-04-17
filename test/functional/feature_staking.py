@@ -11,7 +11,7 @@ from test_framework.util import (
     assert_equal,
     assert_matches,
 )
-from test_framework.test_framework import UnitETestFramework
+from test_framework.test_framework import UnitETestFramework, PROPOSER_REWARD
 
 def all_zeroes(hash_as_sha256_string):
     return 0 == int(hash_as_sha256_string, 16)
@@ -89,7 +89,7 @@ class FeatureStakingTest(UnitETestFramework):
         result = node.liststakeablecoins()
         coins = result['stakeable_coins']
         assert_equal(2, len(coins))
-        assert_equal(set(map(lambda x: x['coin']['amount'], coins)), {Decimal(10000), Decimal(3.75)})
+        assert_equal(set(map(lambda x: x['coin']['amount'], coins)), {Decimal(10000), PROPOSER_REWARD})
 
         self.log.info("Check that chaindata is maintained across restarts")
         chain_height = node.getblockcount()
