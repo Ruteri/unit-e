@@ -43,7 +43,7 @@ BOOST_FIXTURE_TEST_CASE(regular_coinbase, TestChain100Setup) {
   BOOST_CHECK_EQUAL(find_value(regular_coinbase, "category").get_str(), "immature");
 
   // The amount should equal the block reward
-  BOOST_CHECK_EQUAL(find_value(regular_coinbase, "amount").get_real(), 3.75);
+  BOOST_CHECK_EQUAL(find_value(regular_coinbase, "amount").get_real(), 0.6181);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
