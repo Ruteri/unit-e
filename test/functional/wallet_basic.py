@@ -6,14 +6,15 @@
 from test_framework.test_framework import (
     UnitETestFramework,
     COINBASE_MATURITY,
-    PROPOSER_REWARD,
     STAKE_SPLIT_THRESHOLD,
 )
 from test_framework.util import *
+from test_framework.messages import UNIT
 
 import math
 from decimal import Decimal
 
+REWARD = Decimal('5')
 
 def send_specific_output(node, txid, idx, to, amount):
     return node.sendtypeto(
@@ -26,12 +27,14 @@ class WalletTest(UnitETestFramework):
     def set_test_params(self):
         self.num_nodes = 4
         self.setup_clean_chain = True
+        # times ten term accounts for immiediate reward fraction
+        self.reward_args = ["-customchainparams="+json.dumps({"reward": int(REWARD*10*UNIT)})]
 
     def setup_network(self):
         self.add_nodes(4)
-        self.start_node(0)
-        self.start_node(1)
-        self.start_node(2)
+        self.start_node(0, self.reward_args)
+        self.start_node(1, self.reward_args)
+        self.start_node(2, self.reward_args)
         connect_nodes_bi(self.nodes,0,1)
         connect_nodes_bi(self.nodes,1,2)
         connect_nodes_bi(self.nodes,0,2)
@@ -63,8 +66,8 @@ class WalletTest(UnitETestFramework):
 
         walletinfo = self.nodes[0].getwalletinfo()
 
-        immature_balance0 = PROPOSER_REWARD if COINBASE_MATURITY > 0 else 0
-        balance0 += PROPOSER_REWARD - immature_balance0
+        immature_balance0 = REWARD if COINBASE_MATURITY > 0 else 0
+        balance0 += REWARD - immature_balance0
         assert_equal(walletinfo['immature_balance'], immature_balance0)
         assert_equal(walletinfo['balance'], balance0)
 
@@ -72,8 +75,8 @@ class WalletTest(UnitETestFramework):
         self.nodes[1].generate(COINBASE_MATURITY + 1)
         self.sync_all([self.nodes[0:3]])
 
-        balance0 += PROPOSER_REWARD
-        balance1 += PROPOSER_REWARD
+        balance0 += REWARD
+        balance1 += REWARD
 
         assert_equal(self.nodes[0].getbalance(), balance0)
         assert_equal(self.nodes[1].getbalance(), balance1)
@@ -156,7 +159,7 @@ class WalletTest(UnitETestFramework):
         # Have node1 generate some blocks (so node0 can recover the fee)
         self.nodes[1].generate(COINBASE_MATURITY)
         self.sync_all([self.nodes[0:3]])
-        balance0 += PROPOSER_REWARD
+        balance0 += REWARD
 
         # node0 should end up with 100 btc in block rewards plus fees, but
         # minus the 21 plus fees sent to node2
@@ -242,7 +245,7 @@ class WalletTest(UnitETestFramework):
         # - Create a couple of transactions
         # - Connect nodes[3] and ask nodes[0] to rebroadcast
         # EXPECT: nodes[3] should have those transactions in its mempool.
-        self.start_node(3)
+        self.start_node(3, self.reward_args)
         connect_nodes_bi(self.nodes, 0, 3)
         sync_blocks(self.nodes)
         disconnect_nodes(self.nodes[0], self.nodes[3].index)
@@ -292,9 +295,9 @@ class WalletTest(UnitETestFramework):
 
         #do some -walletbroadcast tests
         self.stop_nodes()
-        self.start_node(0, ["-walletbroadcast=0"])
-        self.start_node(1, ["-walletbroadcast=0"])
-        self.start_node(2, ["-walletbroadcast=0"])
+        self.start_node(0, ["-walletbroadcast=0"] + self.reward_args)
+        self.start_node(1, ["-walletbroadcast=0"] + self.reward_args)
+        self.start_node(2, ["-walletbroadcast=0"] + self.reward_args)
         connect_nodes_bi(self.nodes,0,1)
         connect_nodes_bi(self.nodes,1,2)
         connect_nodes_bi(self.nodes,0,2)
@@ -319,9 +322,9 @@ class WalletTest(UnitETestFramework):
 
         #restart the nodes with -walletbroadcast=1
         self.stop_nodes()
-        self.start_node(0)
-        self.start_node(1)
-        self.start_node(2)
+        self.start_node(0, self.reward_args)
+        self.start_node(1, self.reward_args)
+        self.start_node(2, self.reward_args)
         connect_nodes_bi(self.nodes,0,1)
         connect_nodes_bi(self.nodes,1,2)
         connect_nodes_bi(self.nodes,0,2)
@@ -427,9 +430,9 @@ class WalletTest(UnitETestFramework):
             self.log.info("check " + m)
             self.stop_nodes()
             # set lower ancestor limit for later
-            self.start_node(0, [m, "-limitancestorcount="+str(chainlimit)])
-            self.start_node(1, [m, "-limitancestorcount="+str(chainlimit)])
-            self.start_node(2, [m, "-limitancestorcount="+str(chainlimit)])
+            self.start_node(0, [m, "-limitancestorcount="+str(chainlimit)] + self.reward_args)
+            self.start_node(1, [m, "-limitancestorcount="+str(chainlimit)] + self.reward_args)
+            self.start_node(2, [m, "-limitancestorcount="+str(chainlimit)] + self.reward_args)
             if m == '-reindex':
                 # reindex will leave rpc warm up "early"; Wait for it to finish
                 wait_until(lambda: [block_count] * 3 == [self.nodes[i].getblockcount() for i in range(3)])
@@ -481,7 +484,7 @@ class WalletTest(UnitETestFramework):
         # Try with walletrejectlongchains
         # Double chain limit but require combining inputs, so we pass SelectCoinsMinConf
         self.stop_node(0)
-        self.start_node(0, extra_args=["-walletrejectlongchains", "-limitancestorcount="+str(2*chainlimit)])
+        self.start_node(0, extra_args=["-walletrejectlongchains", "-limitancestorcount="+str(2*chainlimit)] + self.reward_args)
 
         # wait for loadmempool
         timeout = 10
