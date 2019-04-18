@@ -157,9 +157,10 @@ class ListSinceBlockTest (UnitETestFramework):
         self.nodes[1].importprivkey(privkey)
 
         # send from nodes[1] using utxo to nodes[0]
-        change = '%.8f' % (float(utxo['amount']) - 1.0003)
+        amount_to_send = '%.8f' % (float(utxo['amount']) * 0.9)
+        change = '%.8f' % (float(utxo['amount']) - float(amount_to_send) - 0.0003)
         recipientDict = {
-            self.nodes[0].getnewaddress(): 1,
+            self.nodes[0].getnewaddress(): amount_to_send,
             self.nodes[1].getnewaddress(): change,
         }
         utxoDicts = [{
@@ -172,7 +173,7 @@ class ListSinceBlockTest (UnitETestFramework):
 
         # send from nodes[2] using utxo to nodes[3]
         recipientDict2 = {
-            self.nodes[3].getnewaddress(): 1,
+            self.nodes[3].getnewaddress(): amount_to_send,
             self.nodes[2].getnewaddress(): change,
         }
         self.nodes[2].sendrawtransaction(
@@ -232,9 +233,10 @@ class ListSinceBlockTest (UnitETestFramework):
         # create and sign a transaction
         utxos = self.nodes[2].listunspent()
         utxo = utxos[0]
-        change = '%.8f' % (float(utxo['amount']) - 1.0003)
+        amount_to_send = '%.8f' % (float(utxo['amount']) * 0.9)
+        change = '%.8f' % (float(utxo['amount']) - float(amount_to_send) - 0.0003)
         recipientDict = {
-            self.nodes[0].getnewaddress(): 1,
+            self.nodes[0].getnewaddress(): amount_to_send,
             self.nodes[2].getnewaddress(): change,
         }
         utxoDicts = [{
