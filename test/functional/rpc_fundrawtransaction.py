@@ -358,12 +358,12 @@ class RawTransactionsTest(UnitETestFramework):
         ############################################################
         #compare fee of a standard pubkeyhash transaction
         inputs = []
-        outputs = {self.nodes[1].getnewaddress():1.1}
+        outputs = {self.nodes[1].getnewaddress():PROPOSER_REWARD - Decimal('0.11')}
         rawtx = self.nodes[0].createrawtransaction(inputs, outputs)
         fundedTx = self.nodes[0].fundrawtransaction(rawtx)
 
         #create same transaction over sendtoaddress
-        txId = self.nodes[0].sendtoaddress(self.nodes[1].getnewaddress(), 1.1)
+        txId = self.nodes[0].sendtoaddress(self.nodes[1].getnewaddress(), PROPOSER_REWARD - Decimal('0.11'))
         signedFee = self.nodes[0].getrawmempool(True)[txId]['fee']
 
         #compare fee
@@ -542,10 +542,10 @@ class RawTransactionsTest(UnitETestFramework):
         # multiple (~19) inputs tx test | Compare fee #
         ###############################################
 
-        #empty node1, send some small coins from node0 to node1
+        #empty node1, generate and send some small coins from node0 to node1
         self.nodes[1].sendtoaddress(self.nodes[0].getnewaddress(), self.nodes[1].getbalance(), "", "", True)
         self.sync_all()
-        self.nodes[0].generate(1)
+        self.nodes[0].generate(21)
         self.sync_all()
 
         for i in range(0,20):
